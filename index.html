@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 150vh;
+            background-color: pink;
+        }
+
+        .parent {
+            position: relative;
+            display: flex;
+            margin: auto;
+            border: 2px solid #333;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            height: 133vh;
+        }
+
+        .trackRecord {
+            flex: 1;
+            margin-right: 20px;
+            color: #333;
+            font-weight: bold;
+            font-size: 1rem;
+            overflow-y: auto;
+            padding: 10px;
+            border-right: 2px solid #ddd;
+            height: 100%;
+        }
+
+        .container {
+            height: 323px;
+            display: grid;
+            grid-template-columns: repeat(10, 32.5px);
+            grid-template-rows: repeat(10, 32.5px);
+            background: url('snake.png');
+            border: 2px solid #000;
+            position: relative;
+            margin: 0 20px;
+        }
+
+        .div {
+            position: relative;
+            box-sizing: border-box;
+        }
+
+        .rad {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin: auto;
+            background-color: rgb(238, 10, 120);
+            z-index: 200;
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23);
+            text-align: center;
+            font-weight: bolder;
+            font-size: 15px;
+        }
+
+        .box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .dice {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+        }
+
+        .dice button {
+            margin: 5px;
+            padding: 10px 20px;
+            font-size: 1rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: #fff;
+            transition: all 0.3s ease;
+            flex: 1; /* Make buttons take equal space */
+        }
+
+        .dice button:hover {
+            background-color: #0056b3;
+        }
+
+        #action {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 1rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background-color: #28a745;
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        #action:hover {
+            background-color: #1e7e34;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="parent">
+        <div class="trackRecord">
+            <h3>Game History</h3>
+        </div>
+        <div class="container">
+            <!-- Dynamically generated squares -->
+            <script>
+                for (let i = 100; i >= 1; i--) {
+                    document.write(`<div class="div square${i}" data-position="${i}"></div>`);
+                }
+            </script>
+        </div>
+
+        <div class="box">
+            <div class="image">
+                <img src="Dice.gif" alt="Dice" height="100px" width="100px">
+            </div>
+            <div class="dice">
+                <button onclick="roll(1)">Player 1</button>
+                <button onclick="roll(2)" style="display:none;">Player 2</button>
+            </div>
+            <h1 id="result"></h1>
+        </div>
+    </div>
+    <button id="action">Download CSV</button>
+
+    <script>
+        const playerPositions = { 1: 0, 2: 0 };
+        const playerMoves = { 1: [], 2: [] };
+        const snakes = { 17: 7, 54: 34, 62: 19, 64: 60, 87: 36, 93: 73, 98: 79 };
+        const ladders = { 1: 38, 4: 14, 9: 31, 21: 42, 28: 84, 51: 67, 72: 91, 80: 99 };
+
+        function playSound(sound) {
+            new Audio(`${sound}.mp3`).play();
+        }
+
+        function updatePosition(player, move) {
+            const newPosition = playerPositions[player] + move;
+            if (newPosition <= 100) {
+                playerPositions[player] = newPosition;
+                document.querySelector(`.square${newPosition}`).classList.add('rad');
+                document.querySelector(`.square${playerPositions[player] - move}`).classList.remove('rad');
+                trackMove(player);
+                handleSpecialSquares(player);
+            }
+        }
+
+        function handleSpecialSquares(player) {
+            const position = playerPositions[player];
+            if (ladders[position]) {
+                playSound('ladder');
+                playerPositions[player] = ladders[position];
+            } else if (snakes[position]) {
+                playSound('snake');
+                playerPositions[player] = snakes[position];
+            }
+            checkWin(player);
+        }
+
+        function checkWin(player) {
+            if (playerPositions[player] === 100) {
+                playSound('win');
+                document.getElementById('result').innerText = `Player ${player} Won`;
+                document.querySelector('img').setAttribute('src', 'Win.gif');
+                document.querySelectorAll('.dice button').forEach(button => button.style.display = 'none');
+            }
+        }
+
+        function roll(player) {
+            const move = Math.floor(Math.random() * 6) + 1;
+            document.querySelector('img').setAttribute("src", `D-${move}.PNG`);
+            updatePosition(player, move);
+            togglePlayerTurn(player);
+        }
+
+        function togglePlayerTurn(currentPlayer) {
+            const nextPlayer = currentPlayer === 1 ? 2 : 1;
+            document.querySelector(`.dice button:nth-child(${currentPlayer})`).style.display = "none";
+            document.querySelector(`.dice button:nth-child(${nextPlayer})`).style.display = "block";
+        }
+
+        function trackMove(player) {
+            const moveRecord = `Player ${player} moved to position ${playerPositions[player]}`;
+            playerMoves[player].push(moveRecord);
+            const trackRecord = document.querySelector(".trackRecord");
+            const moveElement = document.createElement("p");
+            moveElement.textContent = moveRecord;
+            trackRecord.appendChild(moveElement);
+        }
+
+        document.getElementById("action").addEventListener("click", function () {
+            let csvContent = "data:text/csv;charset=utf-8,Turn,Player,Position\n";
+            const maxMoves = Math.max(playerMoves[1].length, playerMoves[2].length);
+            for (let i = 0; i < maxMoves; i++) {
+                if (playerMoves[1][i]) {
+                    csvContent += `${i + 1},Player 1,${playerMoves[1][i].split(" ")[4]}\n`;
+                }
+                if (playerMoves[2][i]) {
+                    csvContent += `${i + 1},Player 2,${playerMoves[2][i].split(" ")[4]}\n`;
+                }
+            }
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "game_history.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+    </script>
+</body>
+
+</html>
